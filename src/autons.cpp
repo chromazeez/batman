@@ -3,6 +3,7 @@
 // bottom so it shows up on the selector
 
 #include "robot.h"
+#include <algorithm> // std::sort
 #include <cmath>
 #include <iterator> // std::size
 
@@ -98,48 +99,31 @@ constexpr int WALL_MIN_CONFIDENCE = 60;     // out of 63
 constexpr int WALL_MAX_MM = 1000;           // 40 inches, past that the reading gets unreliable
 constexpr double WALL_SQUARE_TOLERANCE = 7; // degrees off square before we ignore the reading
 
-constexpr int WALL_SAMPLES = 9;          // readings to take per reset
-constexpr double WALL_MAX_SPREAD = 0.4;  // inches of standard deviation we'll still trust
+constexpr int WALL_SAMPLES = 9;         // readings to take per reset
+constexpr double WALL_MAX_SPREAD = 1.0; // inches between the lowest and highest before we bail
 
 static bool wallReadingOk(pros::Distance& sensor) {
     const int mm = sensor.get_distance();
     return mm > 0 && mm < WALL_MAX_MM && sensor.get_confidence() >= WALL_MIN_CONFIDENCE;
 }
 
-// one reading is noisy, so take a handful, throw out the ones that disagree, average the rest
-// writes inches to `out` and returns true only if the readings actually agreed with each other
+// one reading is noisy, so take nine and use the middle one. a stray spike ends up at one end
+// of the sorted list and can't drag the middle anywhere
+// writes inches to `out`, returns false if the readings weren't good enough to use
 static bool sampleWall(pros::Distance& sensor, double& out) {
-    double samples[WALL_SAMPLES];
+    double s[WALL_SAMPLES];
     int n = 0;
 
     for (int i = 0; i < WALL_SAMPLES; i++) {
-        if (wallReadingOk(sensor)) samples[n++] = sensor.get_distance() / 25.4;
+        if (wallReadingOk(sensor)) s[n++] = sensor.get_distance() / 25.4; // mm to inches
         pros::delay(10);
     }
-    if (n < WALL_SAMPLES / 2) return false; // too many readings were junk
+    if (n < WALL_SAMPLES / 2) return false; // most of them were junk
 
-    double sum = 0;
-    for (int i = 0; i < n; i++) sum += samples[i];
-    const double mean = sum / n;
+    std::sort(s, s + n);
+    if (s[n - 1] - s[0] > WALL_MAX_SPREAD) return false; // they disagree, something moved
 
-    double sq = 0;
-    for (int i = 0; i < n; i++) sq += (samples[i] - mean) * (samples[i] - mean);
-    const double spread = std::sqrt(sq / n); // standard deviation
-
-    if (spread > WALL_MAX_SPREAD) return false; // readings disagree, don't trust any of them
-
-    // average only the ones within one standard deviation, which drops the outliers
-    double kept = 0;
-    int keptCount = 0;
-    for (int i = 0; i < n; i++) {
-        if (std::fabs(samples[i] - mean) <= spread) {
-            kept += samples[i];
-            keptCount++;
-        }
-    }
-    if (keptCount == 0) return false;
-
-    out = kept / keptCount;
+    out = s[n / 2];
     return true;
 }
 

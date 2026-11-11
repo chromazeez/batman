@@ -12,6 +12,21 @@ $env:PATH = "$env:PROS_TOOLCHAIN\bin;$env:PATH"
 & "C:\Users\azizr3780\AppData\Roaming\Code\User\globalStorage\sigbots.pros\install\pros-cli-windows\pros.exe" build
 ```
 
+## Git
+
+Portable git, not on PATH. VS Code finds it through its `git.path` setting:
+
+```powershell
+$git = "C:\Windows\SysWOW64\Tasks\Runner\PortableGit\cmd\git.exe"
+& $git status --short
+```
+
+Remote is `https://github.com/chromazeez/batman.git`, branch `main`. Commit and push after each
+meaningful change. Git writes progress to stderr, so PowerShell shows a red NativeCommandError
+even on a successful push. Check the last line for `main -> main` rather than trusting the colour.
+
+## Build notes
+
 `compile_commands.json` has previously gone stale pointing at a different copy of this project
 (`C:\Users\azizr3780\Documents\override\batman`). If clangd reports phantom errors the real build
 does not, check the `directory` field. `pros build-compile-commands` appends rather than replaces.

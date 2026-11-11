@@ -74,13 +74,118 @@ static void turnBy(float degrees, int timeout, lemlib::TurnToHeadingParams param
     chassis.turnToHeading(chassis.getPose().theta + degrees, timeout, params, false);
 }
 
+// ---- wall resets ----
+// a distance sensor reads straight out from where it's bolted. square the robot up to a field
+// wall and that reading, plus how far the sensor sits from the tracking center, gives one axis
+// of our position absolutely. that's how you undo odometry drift partway through a long route
+//
+// only call these when the robot is stopped and square to a wall. a reading taken at an angle
+// measures the hypotenuse, not the distance to the wall, and comes out too long
+//
+// mounting, from 38535A's TitanReset guide:
+//   square to the robot, no tilt, or the line of sight is off
+//   high enough off the ground that game elements don't get read instead of the wall
+//   nothing on the robot in front of the sensor
+//
+// call after moves that cause drift, not after every move. swings and pose moves drift most
+
+constexpr double FRONT_SENSOR_OFFSET = 7; // TODO measure: tracking center out to the sensor face
+constexpr double SIDE_SENSOR_OFFSET = 6;  // TODO measure: same for the side one
+
+// thresholds from 38535A's TitanReset docs: "relatively close to the field < 40 inches" and
+// "relatively square to the field ~10 deg tolerance". 7 degrees is a bit tighter than theirs
+constexpr int WALL_MIN_CONFIDENCE = 60;     // out of 63
+constexpr int WALL_MAX_MM = 1000;           // 40 inches, past that the reading gets unreliable
+constexpr double WALL_SQUARE_TOLERANCE = 7; // degrees off square before we ignore the reading
+
+constexpr int WALL_SAMPLES = 9;          // readings to take per reset
+constexpr double WALL_MAX_SPREAD = 0.4;  // inches of standard deviation we'll still trust
+
+static bool wallReadingOk(pros::Distance& sensor) {
+    const int mm = sensor.get_distance();
+    return mm > 0 && mm < WALL_MAX_MM && sensor.get_confidence() >= WALL_MIN_CONFIDENCE;
+}
+
+// one reading is noisy, so take a handful, throw out the ones that disagree, average the rest
+// writes inches to `out` and returns true only if the readings actually agreed with each other
+static bool sampleWall(pros::Distance& sensor, double& out) {
+    double samples[WALL_SAMPLES];
+    int n = 0;
+
+    for (int i = 0; i < WALL_SAMPLES; i++) {
+        if (wallReadingOk(sensor)) samples[n++] = sensor.get_distance() / 25.4;
+        pros::delay(10);
+    }
+    if (n < WALL_SAMPLES / 2) return false; // too many readings were junk
+
+    double sum = 0;
+    for (int i = 0; i < n; i++) sum += samples[i];
+    const double mean = sum / n;
+
+    double sq = 0;
+    for (int i = 0; i < n; i++) sq += (samples[i] - mean) * (samples[i] - mean);
+    const double spread = std::sqrt(sq / n); // standard deviation
+
+    if (spread > WALL_MAX_SPREAD) return false; // readings disagree, don't trust any of them
+
+    // average only the ones within one standard deviation, which drops the outliers
+    double kept = 0;
+    int keptCount = 0;
+    for (int i = 0; i < n; i++) {
+        if (std::fabs(samples[i] - mean) <= spread) {
+            kept += samples[i];
+            keptCount++;
+        }
+    }
+    if (keptCount == 0) return false;
+
+    out = kept / keptCount;
+    return true;
+}
+
+// snap the Y part of our pose to a wall. squareHeading is the heading we should be at for this
+// sensor to be pointing at that wall. returns false if it didn't trust the reading
+static bool resetYFromWall(pros::Distance& sensor, double offset, double wallY, double squareHeading) {
+    const lemlib::Pose pose = chassis.getPose();
+    if (std::fabs(lemlib::angleError(squareHeading, pose.theta, false)) > WALL_SQUARE_TOLERANCE) return false;
+
+    double reading;
+    if (!sampleWall(sensor, reading)) return false;
+
+    const double gap = reading + offset;
+    const double fixed = (wallY > pose.y) ? wallY - gap : wallY + gap; // odom says which side we're on
+
+    chassis.setPose(pose.x, fixed, pose.theta);
+    return true;
+}
+
+static bool resetXFromWall(pros::Distance& sensor, double offset, double wallX, double squareHeading) {
+    const lemlib::Pose pose = chassis.getPose();
+    if (std::fabs(lemlib::angleError(squareHeading, pose.theta, false)) > WALL_SQUARE_TOLERANCE) return false;
+
+    double reading;
+    if (!sampleWall(sensor, reading)) return false;
+
+    const double gap = reading + offset;
+    const double fixed = (wallX > pose.x) ? wallX - gap : wallX + gap;
+
+    chassis.setPose(fixed, pose.y, pose.theta);
+    return true;
+}
+
+// lift heights, named for how many pins they clear
+constexpr double CASCADE_2PIN = CASCADE_SCORE * 1.6;
+constexpr double CASCADE_3PIN = CASCADE_SCORE * 2.5;
+
 // ---- routes ----
 void skill_route(ToggleColor color) {
     chassis.setPose(0, 0, 0);
 
     autoToggle(color, 5000);
 
-    chassis.moveToPoint(0, 7.25, 1000, {.minSpeed = 60, .earlyExitRange = 1});
+    // blocking and no early exit, so the robot is actually stopped before the turn starts
+    // turning while still rolling throws off the drive into the goal two steps later
+    chassis.moveToPoint(0, 7.25, 1500, {}, false);
     // async, so it climbs during the turn and the drive below instead of the robot waiting for it
     cascade.move_absolute(CASCADE_SCORE, CASCADE_RPM);
     // slower than the tuned gains would run it, the raised cascade makes the robot top heavy
@@ -97,7 +202,9 @@ void skill_route(ToggleColor color) {
     pros::delay(300);
 
     driveInches(-12, 2000, {.minSpeed = 60, .earlyExitRange = 2});
-    turnBy(-45, 1500);
+    // absolute, not turnBy. the aligner leaves us at a slightly different heading every run and
+    // a relative turn would carry that error through the whole rest of the route
+    chassis.turnToHeading(45, 1500, {}, false);
 
     cascadeMoveTo(CASCADE_BOTTOM, 2500, 80); 
 
@@ -105,21 +212,39 @@ void skill_route(ToggleColor color) {
     driveInches(28, 3000, {.minSpeed = 60, .earlyExitRange = 1});
     driveInches(3, 1500, {.maxSpeed = 37});
 
-    // zero the heading here so the 135 below is measured from a clean reference
-    const lemlib::Pose here = chassis.getPose();
-    chassis.setPose(here.x, here.y, 0);
-
-    // 20% above the scoring height. async, so it keeps rising through the turn below
-    cascade.move_absolute(CASCADE_SCORE * 1.6, CASCADE_RPM);
-
+    pros::delay(10);
     claw.move(0); // voltage 0, so it coasts through the turn
 
-    // absolute now that the heading is zeroed above
-    chassis.turnToHeading(135, 3000, {.maxSpeed = 70}, false);
+    cascade.move_absolute(CASCADE_2PIN, CASCADE_RPM); // async, keeps rising through the turn
+
+    chassis.turnToHeading(180, 3000, {.maxSpeed = 56}, false); // 45 + 135, as an absolute heading
 
     claw.move(127); // back to intaking, you wanted it spinning after the 135
     pros::delay(20);
-    driveInches(12, 2000, {.minSpeed = 60, .earlyExitRange = 2});
+    // no minSpeed, so the slew applies. same maxSpeed as the scoring drive
+    driveInches(12.5, 2000, {.maxSpeed = 60});
+
+    // ---- second cycle ----
+    cascadeMoveTo(CASCADE_BOTTOM + 250, 2500, 80);
+
+    driveInches(-12.5, 2000, {.minSpeed = 60, .earlyExitRange = 2});
+    chassis.turnToHeading(135, 1500, {}, false); // 180 - 45
+
+    cascadeMoveTo(CASCADE_BOTTOM, 2500, 80);
+
+    claw.move(127);
+    driveInches(28, 3000, {.minSpeed = 60, .earlyExitRange = 1});
+    driveInches(3, 1500, {.maxSpeed = 37});
+
+    pros::delay(10);
+    claw.move(0);
+    cascade.move_absolute(CASCADE_3PIN, CASCADE_RPM);
+    // 135 + 135 is 270, same thing as -90. slower than the 2pin turn, it's carrying more height
+    chassis.turnToHeading(-90, 3000, {.maxSpeed = 48}, false);
+    claw.move(127);
+
+    driveInches(12, 2000, {.maxSpeed = 60});
+    cascadeMoveTo(CASCADE_BOTTOM + 250, 2500, 80);
 }
 
 // ---- tuning routes, kept for the notebook ----

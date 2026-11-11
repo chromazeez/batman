@@ -20,6 +20,11 @@ pros::Motor claw(2, pros::MotorGears::green);
 pros::Motor toggle(8, pros::MotorGears::green);
 pros::MotorGroup cascade({-9, 10}, pros::MotorGearset::green); // two motors locked together, 9 faces the other way
 
+// wall sensors for correcting odometry mid route, see the helpers in autons.cpp
+// TODO set the real ports. free ones right now: 1, 7, 11-15, 21
+pros::Distance frontDistance(11);
+pros::Distance sideDistance(12);
+
 pros::Imu imu(5);
 pros::Rotation horizontalEnc(-4); // reversed for the same reason the drive is, front flipped
 pros::Optical optical(16);

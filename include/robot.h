@@ -19,6 +19,8 @@ extern pros::MotorGroup cascade;
 extern pros::Imu imu;
 extern pros::Rotation horizontalEnc;
 extern pros::Optical optical;
+extern pros::Distance frontDistance;
+extern pros::Distance sideDistance;
 extern lemlib::Chassis chassis;
 
 // ---- toggle ----

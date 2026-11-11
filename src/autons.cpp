@@ -102,7 +102,8 @@ void skill_route(ToggleColor color) {
     cascadeMoveTo(CASCADE_BOTTOM, 2500, 80); 
 
     claw.move(127); // intake, R1's direction. left running for the rest of the route
-    driveInches(31, 4000, {.maxSpeed = 37});
+    driveInches(28, 3000, {.minSpeed = 60, .earlyExitRange = 1});
+    driveInches(3, 1500, {.maxSpeed = 37});
 
     // zero the heading here so the 135 below is measured from a clean reference
     const lemlib::Pose here = chassis.getPose();

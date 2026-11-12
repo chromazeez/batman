@@ -203,17 +203,17 @@ void skill_route(ToggleColor color) {
     
     // async, keeps rising through the turn
 
-    claw.move(0); 
+    claw.move(127); 
 
     // claw left running from the drive above, so it keeps intaking through the whole turn
     chassis.turnToHeading(90, 3000, {.maxSpeed = 30}, false); // -46 + 136, same turn as before
 
     // no minSpeed, so the slew applies. same maxSpeed as the scoring drive
-    driveInches(25, 2000, {.maxSpeed = 80});
+    driveInches(27, 2000, {.maxSpeed = 80});
 
     // ---- second cycle ----
-    cascadeMoveTo(CASCADE_BOTTOM + 200, 2500, 80);
-/*
+    cascadeMoveTo(CASCADE_BOTTOM + 200, 2500, 100);
+
     driveInches(-24, 2000, {.minSpeed = 60, .earlyExitRange = 2});
     chassis.turnToHeading(45, 1500, {}, false); // 90 - 45
 
@@ -232,8 +232,6 @@ void skill_route(ToggleColor color) {
 
     driveInches(12, 2000, {.maxSpeed = 60});
     cascadeMoveTo(CASCADE_BOTTOM + 250, 2500, 80);
-
-    */
 }
 
 // ---- tuning routes, kept for the notebook ----

@@ -167,9 +167,10 @@ void skill_route(ToggleColor color) {
 
     autoToggle(color, 5000);
 
-    // blocking and no early exit, so the robot is actually stopped before the turn starts
-    // turning while still rolling throws off the drive into the goal two steps later
-    chassis.moveToPoint(0, 7.25, 1500, {}, false);
+    // minSpeed holds the power up, PID alone fades to nothing over 7 inches and lands short
+    // blocking, then a delay to cover the coast, so the turn can't start while it's still rolling
+    driveInches(7.25, 1500, {.minSpeed = 60, .earlyExitRange = 1});
+    pros::delay(100);
     // async, so it climbs during the turn and the drive below instead of the robot waiting for it
     cascade.move_absolute(CASCADE_SCORE, CASCADE_RPM);
     // slower than the tuned gains would run it, the raised cascade makes the robot top heavy

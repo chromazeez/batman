@@ -158,7 +158,7 @@ static bool resetXFromWall(pros::Distance& sensor, double offset, double wallX, 
 }
 
 // lift heights, named for how many pins they clear
-constexpr double CASCADE_2PIN = CASCADE_SCORE * 1.6;
+constexpr double CASCADE_2PIN = CASCADE_SCORE * 1.76;
 constexpr double CASCADE_3PIN = CASCADE_SCORE * 2.5;
 
 // ---- routes ----
@@ -203,12 +203,12 @@ void skill_route(ToggleColor color) {
     chassis.turnToHeading(180, 3000, {.maxSpeed = 56}, false); // 45 + 135, as an absolute heading
 
     // no minSpeed, so the slew applies. same maxSpeed as the scoring drive
-    driveInches(17, 2000, {.maxSpeed = 60});
+    driveInches(24, 2000, {.maxSpeed = 60});
 
     // ---- second cycle ----
     cascadeMoveTo(CASCADE_BOTTOM + 250, 2500, 80);
 
-    driveInches(-17, 2000, {.minSpeed = 60, .earlyExitRange = 2});
+    driveInches(-24, 2000, {.minSpeed = 60, .earlyExitRange = 2});
     chassis.turnToHeading(135, 1500, {}, false); // 180 - 45
 
     cascadeMoveTo(CASCADE_BOTTOM, 2500, 80);

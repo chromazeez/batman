@@ -169,7 +169,7 @@ void skill_route(ToggleColor color) {
 
     // minSpeed holds the power up, PID alone fades to nothing over 7 inches and lands short
     // blocking, then a delay to cover the coast, so the turn can't start while it's still rolling
-    driveInches(7.25, 1500, {.minSpeed = 60, .earlyExitRange = 1});
+    driveInches(7.5, 1500, {.minSpeed = 60, .earlyExitRange = 1});
     pros::delay(100);
     // async, so it climbs during the turn and the drive below instead of the robot waiting for it
     cascade.move_absolute(CASCADE_SCORE, CASCADE_RPM);
@@ -181,34 +181,38 @@ void skill_route(ToggleColor color) {
 
     // move_absolute returns right away, so the cascade keeps lowering while the claw opens
     // 80 rpm instead of the usual CASCADE_RPM, gravity makes the way down too quick at full speed
-    cascadeMoveTo(CASCADE_BOTTOM + 250, 2500, 80); // slow on the way down, blocks until it's there
+    cascadeMoveTo(CASCADE_BOTTOM + 300, 2500, 80); // slow on the way down, blocks until it's there
 
     claw.move(-127); // open, same direction as R2 in driver control
     pros::delay(700);
 
+    // the aligner just squared us to the goal, so this is the one place in the route where we
+    // physically know where the robot is. call it zero and throw away the drift up to here
+    // every heading below is measured from this, which is why they're all 90 less than before
+    chassis.setPose(0, 0, 0);
+
     driveInches(-12.5, 2000, {.minSpeed = 60, .earlyExitRange = 2});
-    // absolute, not turnBy. the aligner leaves us at a slightly different heading every run and
-    // a relative turn would carry that error through the whole rest of the route
-    chassis.turnToHeading(45, 1500, {}, false);
+    // -46, same turn the old absolute 44 was in the old frame
+    chassis.turnToHeading(-46, 1500, {}, false);
 
     cascadeMoveTo(CASCADE_BOTTOM, 2500, 80); 
 
     claw.move(127); // intake, R1's direction. left running for the rest of the route
-    driveInches(33.5, 4000, {.maxSpeed = 30});
+    driveInches(33.5, 4000, {.maxSpeed = 20});
 
     cascade.move_absolute(CASCADE_2PIN, CASCADE_RPM); // async, keeps rising through the turn
 
     // claw left running from the drive above, so it keeps intaking through the whole turn
-    chassis.turnToHeading(180, 3000, {.maxSpeed = 56}, false); // 45 + 135, as an absolute heading
+    chassis.turnToHeading(90, 3000, {.maxSpeed = 56}, false); // -46 + 135, was 180 before the zero
 
     // no minSpeed, so the slew applies. same maxSpeed as the scoring drive
     driveInches(24, 2000, {.maxSpeed = 60});
 
     // ---- second cycle ----
-    cascadeMoveTo(CASCADE_BOTTOM + 250, 2500, 80);
+    cascadeMoveTo(CASCADE_BOTTOM + 200, 2500, 80);
 
     driveInches(-24, 2000, {.minSpeed = 60, .earlyExitRange = 2});
-    chassis.turnToHeading(135, 1500, {}, false); // 180 - 45
+    chassis.turnToHeading(45, 1500, {}, false); // 90 - 45, was 135
 
     cascadeMoveTo(CASCADE_BOTTOM, 2500, 80);
 
@@ -219,8 +223,8 @@ void skill_route(ToggleColor color) {
     pros::delay(10);
     claw.move(0);
     cascade.move_absolute(CASCADE_3PIN, CASCADE_RPM);
-    // 135 + 135 is 270, same thing as -90. slower than the 2pin turn, it's carrying more height
-    chassis.turnToHeading(-90, 3000, {.maxSpeed = 48}, false);
+    // 45 + 135 is 180. slower than the 2pin turn, it's carrying more height
+    chassis.turnToHeading(180, 3000, {.maxSpeed = 48}, false);
     claw.move(127);
 
     driveInches(12, 2000, {.maxSpeed = 60});

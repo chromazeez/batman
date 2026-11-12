@@ -171,10 +171,10 @@ void skill_route(ToggleColor color) {
     // blocking, then a delay to cover the coast, so the turn can't start while it's still rolling
     driveInches(7.5, 1500, {.minSpeed = 60, .earlyExitRange = 1});
     pros::delay(100);
-    // async, so it climbs during the turn and the drive below instead of the robot waiting for it
+    // turn with the lift still down, at the speed the gains were tuned at
+    chassis.turnToHeading(90, 1500, {.maxSpeed = 55}, false);
+    // lift starts after the turn, async, so it climbs during the drive instead
     cascade.move_absolute(CASCADE_SCORE, CASCADE_RPM);
-    // slower than the tuned gains would run it, the raised cascade makes the robot top heavy
-    chassis.turnToHeading(90, 1500, {.maxSpeed = 40}, false);
     // no minSpeed here on purpose, it would switch off the slew set in linearController
     // slew ramps the power up instead of slamming it, which matters with the cascade raised
     driveInches(14, 2000, {.maxSpeed = 50});
@@ -196,14 +196,9 @@ void skill_route(ToggleColor color) {
     claw.move(127); // intake, R1's direction. left running for the rest of the route
     driveInches(31, 4000, {.maxSpeed = 27});
 
-    cascade.move_absolute(CASCADE_2PIN, CASCADE_RPM); 
-    
-    // async, keeps rising through the turn
-
-    claw.move(127); 
-
-    // claw left running from the drive above, so it keeps intaking through the whole turn
-    chassis.turnToHeading(180, 3000, {.maxSpeed = 30}, false); // 44 + 136, as an absolute heading
+    // same deal, turn first with the lift down, then raise during the drive into the goal
+    chassis.turnToHeading(180, 1500, {.maxSpeed = 55}, false); // 44 + 136, as an absolute heading
+    cascade.move_absolute(CASCADE_2PIN, CASCADE_RPM);          // async, climbs during the drive
 
     // no minSpeed, so the slew applies. same maxSpeed as the scoring drive
     driveInches(27, 2000, {.maxSpeed = 80});

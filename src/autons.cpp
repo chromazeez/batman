@@ -186,7 +186,11 @@ void skill_route(ToggleColor color) {
     claw.move(-127); // open, same direction as R2 in driver control
     pros::delay(700);
 
-    driveInches(-9, 2000, {.minSpeed = 60, .earlyExitRange = 2});
+    // squared up on the goal, so call this the new origin and drop the drift from the first leg
+    // headings below are measured from here now, 0 is whatever the aligner left us at
+    chassis.setPose(0, 0, 0);
+
+    driveInches(-12, 2000, {.minSpeed = 60, .earlyExitRange = 2});
     // absolute, not turnBy. the aligner leaves us at a slightly different heading every run and
     // a relative turn would carry that error through the whole rest of the route
     chassis.turnToHeading(44, 1500, {}, false);
@@ -206,7 +210,7 @@ void skill_route(ToggleColor color) {
     chassis.turnToHeading(180, 3000, {.maxSpeed = 30}, false); // 45 + 135, as an absolute heading
 
     // no minSpeed, so the slew applies. same maxSpeed as the scoring drive
-    driveInches(24, 2000, {.maxSpeed = 80});
+    driveInches(25, 2000, {.maxSpeed = 80});
 
     // ---- second cycle ----
     cascadeMoveTo(CASCADE_BOTTOM + 200, 2500, 80);

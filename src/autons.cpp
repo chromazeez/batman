@@ -191,9 +191,8 @@ void skill_route(ToggleColor color) {
     chassis.setPose(0, 0, 0);
 
     driveInches(-12, 2000, {.minSpeed = 60, .earlyExitRange = 2});
-    // absolute, not turnBy. the aligner leaves us at a slightly different heading every run and
-    // a relative turn would carry that error through the whole rest of the route
-    chassis.turnToHeading(44, 1500, {}, false);
+    // -46, not 44, the zero above made the goal heading the new 0
+    chassis.turnToHeading(-46, 1500, {}, false);
 
     cascadeMoveTo(CASCADE_BOTTOM, 2500, 80); 
 
@@ -207,7 +206,7 @@ void skill_route(ToggleColor color) {
     claw.move(0); 
 
     // claw left running from the drive above, so it keeps intaking through the whole turn
-    chassis.turnToHeading(180, 3000, {.maxSpeed = 30}, false); // 45 + 135, as an absolute heading
+    chassis.turnToHeading(90, 3000, {.maxSpeed = 30}, false); // -46 + 136, same turn as before
 
     // no minSpeed, so the slew applies. same maxSpeed as the scoring drive
     driveInches(25, 2000, {.maxSpeed = 80});
@@ -216,7 +215,7 @@ void skill_route(ToggleColor color) {
     cascadeMoveTo(CASCADE_BOTTOM + 200, 2500, 80);
 /*
     driveInches(-24, 2000, {.minSpeed = 60, .earlyExitRange = 2});
-    chassis.turnToHeading(135, 1500, {}, false); // 180 - 45
+    chassis.turnToHeading(45, 1500, {}, false); // 90 - 45
 
     cascadeMoveTo(CASCADE_BOTTOM, 2500, 80);
 
@@ -227,8 +226,8 @@ void skill_route(ToggleColor color) {
     pros::delay(10);
     claw.move(0);
     cascade.move_absolute(CASCADE_3PIN, CASCADE_RPM);
-    // 135 + 135 is 270, same thing as -90. slower than the 2pin turn, it's carrying more height
-    chassis.turnToHeading(-90, 3000, {.maxSpeed = 48}, false);
+    // 45 + 135 is 180. slower than the 2pin turn, it's carrying more height
+    chassis.turnToHeading(180, 3000, {.maxSpeed = 48}, false);
     claw.move(127);
 
     driveInches(12, 2000, {.maxSpeed = 60});

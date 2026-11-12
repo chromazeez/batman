@@ -174,10 +174,10 @@ void skill_route(ToggleColor color) {
     // async, so it climbs during the turn and the drive below instead of the robot waiting for it
     cascade.move_absolute(CASCADE_SCORE, CASCADE_RPM);
     // slower than the tuned gains would run it, the raised cascade makes the robot top heavy
-    chassis.turnToHeading(90, 1500, {.maxSpeed = 70}, false);
+    chassis.turnToHeading(90, 1500, {.maxSpeed = 40}, false);
     // no minSpeed here on purpose, it would switch off the slew set in linearController
     // slew ramps the power up instead of slamming it, which matters with the cascade raised
-    driveInches(12.5, 2000, {.maxSpeed = 60});
+    driveInches(14, 2000, {.maxSpeed = 60});
 
     // move_absolute returns right away, so the cascade keeps lowering while the claw opens
     // 80 rpm instead of the usual CASCADE_RPM, gravity makes the way down too quick at full speed
@@ -186,7 +186,7 @@ void skill_route(ToggleColor color) {
     claw.move(-127); // open, same direction as R2 in driver control
     pros::delay(300);
 
-    driveInches(-12, 2000, {.minSpeed = 60, .earlyExitRange = 2});
+    driveInches(-14, 2000, {.minSpeed = 60, .earlyExitRange = 2});
     // absolute, not turnBy. the aligner leaves us at a slightly different heading every run and
     // a relative turn would carry that error through the whole rest of the route
     chassis.turnToHeading(45, 1500, {}, false);
@@ -194,32 +194,28 @@ void skill_route(ToggleColor color) {
     cascadeMoveTo(CASCADE_BOTTOM, 2500, 80); 
 
     claw.move(127); // intake, R1's direction. left running for the rest of the route
-    driveInches(28, 3000, {.minSpeed = 60, .earlyExitRange = 1});
-    driveInches(3, 1500, {.maxSpeed = 37});
-
-    pros::delay(10);
-    claw.move(0); // voltage 0, so it coasts through the turn
+    driveInches(23.5, 3000, {.minSpeed = 37, .earlyExitRange = 1});
+    driveInches(11, 1500, {.maxSpeed = 15});
 
     cascade.move_absolute(CASCADE_2PIN, CASCADE_RPM); // async, keeps rising through the turn
 
+    // claw left running from the drive above, so it keeps intaking through the whole turn
     chassis.turnToHeading(180, 3000, {.maxSpeed = 56}, false); // 45 + 135, as an absolute heading
 
-    claw.move(127); // back to intaking, you wanted it spinning after the 135
-    pros::delay(20);
     // no minSpeed, so the slew applies. same maxSpeed as the scoring drive
-    driveInches(12.5, 2000, {.maxSpeed = 60});
+    driveInches(17, 2000, {.maxSpeed = 60});
 
     // ---- second cycle ----
     cascadeMoveTo(CASCADE_BOTTOM + 250, 2500, 80);
 
-    driveInches(-12.5, 2000, {.minSpeed = 60, .earlyExitRange = 2});
+    driveInches(-17, 2000, {.minSpeed = 60, .earlyExitRange = 2});
     chassis.turnToHeading(135, 1500, {}, false); // 180 - 45
 
     cascadeMoveTo(CASCADE_BOTTOM, 2500, 80);
 
     claw.move(127);
-    driveInches(28, 3000, {.minSpeed = 60, .earlyExitRange = 1});
-    driveInches(3, 1500, {.maxSpeed = 37});
+    driveInches(27, 3000, {.minSpeed = 50, .earlyExitRange = 1});
+    driveInches(4, 1500, {.maxSpeed = 25});
 
     pros::delay(10);
     claw.move(0);

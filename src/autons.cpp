@@ -177,16 +177,16 @@ void skill_route(ToggleColor color) {
     chassis.turnToHeading(90, 1500, {.maxSpeed = 40}, false);
     // no minSpeed here on purpose, it would switch off the slew set in linearController
     // slew ramps the power up instead of slamming it, which matters with the cascade raised
-    driveInches(14, 2000, {.maxSpeed = 60});
+    driveInches(14, 2000, {.maxSpeed = 50});
 
     // move_absolute returns right away, so the cascade keeps lowering while the claw opens
     // 80 rpm instead of the usual CASCADE_RPM, gravity makes the way down too quick at full speed
     cascadeMoveTo(CASCADE_BOTTOM + 250, 2500, 80); // slow on the way down, blocks until it's there
 
     claw.move(-127); // open, same direction as R2 in driver control
-    pros::delay(300);
+    pros::delay(700);
 
-    driveInches(-14, 2000, {.minSpeed = 60, .earlyExitRange = 2});
+    driveInches(-12.5, 2000, {.minSpeed = 60, .earlyExitRange = 2});
     // absolute, not turnBy. the aligner leaves us at a slightly different heading every run and
     // a relative turn would carry that error through the whole rest of the route
     chassis.turnToHeading(45, 1500, {}, false);
@@ -194,8 +194,7 @@ void skill_route(ToggleColor color) {
     cascadeMoveTo(CASCADE_BOTTOM, 2500, 80); 
 
     claw.move(127); // intake, R1's direction. left running for the rest of the route
-    driveInches(23.5, 3000, {.minSpeed = 37, .earlyExitRange = 1});
-    driveInches(11, 1500, {.maxSpeed = 15});
+    driveInches(33.5, 4000, {.maxSpeed = 30});
 
     cascade.move_absolute(CASCADE_2PIN, CASCADE_RPM); // async, keeps rising through the turn
 

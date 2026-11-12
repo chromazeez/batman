@@ -158,7 +158,7 @@ static bool resetXFromWall(pros::Distance& sensor, double offset, double wallX, 
 }
 
 // lift heights, named for how many pins they clear
-constexpr double CASCADE_2PIN = CASCADE_SCORE * 1.76;
+constexpr double CASCADE_2PIN = CASCADE_SCORE * 1.85;
 constexpr double CASCADE_3PIN = CASCADE_SCORE * 2.5;
 
 // ---- routes ----
@@ -181,12 +181,12 @@ void skill_route(ToggleColor color) {
 
     // move_absolute returns right away, so the cascade keeps lowering while the claw opens
     // 80 rpm instead of the usual CASCADE_RPM, gravity makes the way down too quick at full speed
-    cascadeMoveTo(CASCADE_BOTTOM + 300, 2500, 80); // slow on the way down, blocks until it's there
+    cascadeMoveTo(CASCADE_BOTTOM +210, 2500, 80); // slow on the way down, blocks until it's there
 
     claw.move(-127); // open, same direction as R2 in driver control
     pros::delay(700);
 
-    driveInches(-12.5, 2000, {.minSpeed = 60, .earlyExitRange = 2});
+    driveInches(-9, 2000, {.minSpeed = 60, .earlyExitRange = 2});
     // absolute, not turnBy. the aligner leaves us at a slightly different heading every run and
     // a relative turn would carry that error through the whole rest of the route
     chassis.turnToHeading(44, 1500, {}, false);
@@ -194,19 +194,23 @@ void skill_route(ToggleColor color) {
     cascadeMoveTo(CASCADE_BOTTOM, 2500, 80); 
 
     claw.move(127); // intake, R1's direction. left running for the rest of the route
-    driveInches(33.5, 4000, {.maxSpeed = 36});
+    driveInches(31, 4000, {.maxSpeed = 27});
 
-    cascade.move_absolute(CASCADE_2PIN, CASCADE_RPM); // async, keeps rising through the turn
+    cascade.move_absolute(CASCADE_2PIN, CASCADE_RPM); 
+    
+    // async, keeps rising through the turn
+
+    claw.move(0); 
 
     // claw left running from the drive above, so it keeps intaking through the whole turn
-    chassis.turnToHeading(180, 3000, {.maxSpeed = 56}, false); // 45 + 135, as an absolute heading
+    chassis.turnToHeading(180, 3000, {.maxSpeed = 30}, false); // 45 + 135, as an absolute heading
 
     // no minSpeed, so the slew applies. same maxSpeed as the scoring drive
-    driveInches(24, 2000, {.maxSpeed = 60});
+    driveInches(24, 2000, {.maxSpeed = 80});
 
     // ---- second cycle ----
     cascadeMoveTo(CASCADE_BOTTOM + 200, 2500, 80);
-
+/*
     driveInches(-24, 2000, {.minSpeed = 60, .earlyExitRange = 2});
     chassis.turnToHeading(135, 1500, {}, false); // 180 - 45
 
@@ -225,6 +229,8 @@ void skill_route(ToggleColor color) {
 
     driveInches(12, 2000, {.maxSpeed = 60});
     cascadeMoveTo(CASCADE_BOTTOM + 250, 2500, 80);
+
+    */
 }
 
 // ---- tuning routes, kept for the notebook ----

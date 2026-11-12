@@ -14,7 +14,7 @@ pros::Controller controller(pros::E_CONTROLLER_MASTER);
 // we made the old back the new front, which swapped the sides
 // so leftMotors is the physical RIGHT side of the robot now
 pros::MotorGroup leftMotors({19, 17, 6}, pros::MotorGearset::blue);
-pros::MotorGroup rightMotors({-20, -18, -3}, pros::MotorGearset::blue);
+pros::MotorGroup rightMotors({-20, -18, -13}, pros::MotorGearset::blue);
 
 pros::Motor claw(2, pros::MotorGears::green);
 pros::Motor toggle(8, pros::MotorGears::green);
@@ -23,7 +23,7 @@ pros::MotorGroup cascade({-9, 10}, pros::MotorGearset::green); // two motors loc
 // wall sensors for correcting odometry mid route, see the helpers in autons.cpp
 // TODO set the real ports. free ones right now: 1, 7, 11-15, 21
 pros::Distance frontDistance(11);
-pros::Distance sideDistance(12);
+//pros::Distance sideDistance(12);
 
 pros::Imu imu(5);
 pros::Rotation horizontalEnc(-4); // reversed for the same reason the drive is, front flipped
